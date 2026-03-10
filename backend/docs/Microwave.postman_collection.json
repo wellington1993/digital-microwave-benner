@@ -1,0 +1,169 @@
+{
+	"info": {
+		"name": "Microwave API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.token) {",
+									"    pm.collectionVariables.set(\"bearer_token\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Microwave",
+			"item": [
+				{
+					"name": "Get Status",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/microwave/status",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "status" ]
+						}
+					}
+				},
+				{
+					"name": "Start Manual",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"durationSeconds\": 30,\n    \"power\": 10,\n    \"heatingChar\": \".\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{base_url}}/microwave/start",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "start" ]
+						}
+					}
+				},
+				{
+					"name": "Quick Start",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/microwave/quick-start",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "quick-start" ]
+						}
+					}
+				},
+				{
+					"name": "Pause or Cancel",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/microwave/pause-cancel",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "pause-cancel" ]
+						}
+					}
+				},
+				{
+					"name": "Start Program",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"programName\": \"Pipoca\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{base_url}}/microwave/start-program",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "start-program" ]
+						}
+					}
+				},
+				{
+					"name": "List Programs",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/microwave/programs",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "programs" ]
+						}
+					}
+				},
+				{
+					"name": "Add Program",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Arroz\",\n    \"alimento\": \"Arroz Branco\",\n    \"durationSeconds\": 60,\n    \"power\": 10,\n    \"heatingChar\": \"x\",\n    \"instructions\": \"Lavar antes\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{base_url}}/microwave/programs",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "programs" ]
+						}
+					}
+				},
+				{
+					"name": "Delete Program",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/microwave/programs/Arroz",
+							"host": [ "{{base_url}}" ],
+							"path": [ "microwave", "programs", "Arroz" ]
+						}
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [ { "key": "token", "value": "{{bearer_token}}", "type": "string" } ]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:5000/api", "type": "string" },
+		{ "key": "bearer_token", "value": "", "type": "string" }
+	]
+}

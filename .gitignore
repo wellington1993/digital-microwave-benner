@@ -1,0 +1,13 @@
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.doccache
+*.suo
+*.userprefs
+*.tmp
+*.log
+logs.txt
+data/programs.json
+.vs/
+.vscode/
