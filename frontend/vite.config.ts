@@ -1,18 +1,16 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: './',
+  // Usa o path do repo apenas no build de producao
+  base: command === 'build' ? '/digital-microwave-benner/' : '/', 
   server: {
     port: 5173,
     strictPort: true,
     watch: {
       usePolling: true,
       interval: 100,
-    },
-    hmr: {
-      overlay: true,
     },
     proxy: {
       '/api': {
@@ -27,4 +25,4 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
   },
-})
+}))
