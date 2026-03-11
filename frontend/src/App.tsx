@@ -31,8 +31,8 @@ export default function App() {
   const [isPredefined, setIsPredefined] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
+  const debounceRef = useRef<any>(null);
 
   // Stream SSE e Auto-deteçao
   useEffect(() => {
