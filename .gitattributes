@@ -1,0 +1,9 @@
+# Força LF em todos os arquivos de texto
+* text=auto eol=lf
+
+# Binários — sem conversão
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+*.woff binary
