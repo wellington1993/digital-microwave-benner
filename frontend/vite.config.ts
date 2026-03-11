@@ -3,14 +3,16 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
-  // Usa o path do repo apenas no build de producao
-  base: command === 'build' ? '/digital-microwave-benner/' : '/', 
+  base: command === 'build' ? '/digital-microwave-benner/' : '/',
   server: {
     port: 5173,
     strictPort: true,
     watch: {
       usePolling: true,
-      interval: 100,
+      interval: 50,
+    },
+    hmr: {
+      overlay: true,
     },
     proxy: {
       '/api': {

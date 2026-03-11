@@ -1,21 +1,38 @@
-# microwave-digital-benner
+# Micro-ondas Digital
 
-Desafio tecnico de um micro-ondas digital.
+API REST de um micro-ondas digital com frontend React. Backend em .NET 8, frontend em React + TypeScript + TailwindCSS.
 
-## Execucao local
+## Arquitetura
 
-Requisitos: .NET 8 SDK e Node 20+.
+### Backend (.NET 8)
+- Clean Architecture com camadas Domain, Application, Infrastructure e Api
+- State Pattern para o ciclo de vida do forno (Idle, Heating, Paused)
+- Persistência em JSON local com controle de concorrência via SemaphoreSlim
+- Autenticação JWT com senha em SHA1
 
-1. Backend:
-`dotnet run --project backend/src/Microwave.Api --urls "http://localhost:5000"`
+### Frontend (React + Vite + TypeScript)
+- Modo offline: detecta automaticamente quando o backend está indisponível e ativa simulação local
+- Reconexão automática a cada 5s via probe
+- SSE para atualização em tempo real do estado do micro-ondas
 
-2. Frontend:
-`cd frontend && npm install && npm run dev`
+## Rodando localmente
 
-O painel estara disponivel em: `http://localhost:5173` (admin/admin).
+**Requisitos:** .NET 8 SDK e Node.js 24+
 
-## Detalhes tecnicos
+```bash
+# Backend
+dotnet run --project backend/src/Microwave.Api
 
-- **Backend:** Clean Architecture com State Pattern para o controle do forno. Persistencia em arquivos JSON e seguranca via JWT/SHA1.
-- **Frontend:** React + Tailwind. Possui um interceptor que ativa uma simulacao local caso o backend nao seja detectado, garantindo a operacao das funcoes basicas.
-- **CI/CD:** Pipeline no Github Actions para deploy automatico do frontend.
+# Frontend (outro terminal)
+cd frontend && npm install && npm run dev
+```
+
+Ou com Docker:
+
+```bash
+docker-compose up --build
+```
+
+## Deploy
+
+O frontend é publicado via GitHub Actions no push para `main`.
