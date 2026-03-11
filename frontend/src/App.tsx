@@ -10,7 +10,7 @@ const PREDEFINED_PROGRAMS = [
 ];
 
 const STATE_LABEL: Record<string, string> = {
-  Idle: 'Ocioso', Heating: 'Aquecendo', Paused: 'Pausado',
+  Idle: 'Ocioso', Heating: 'Aquecendo', Active: 'Aquecendo', Paused: 'Pausado',
 };
 
 export default function App() {
@@ -25,7 +25,9 @@ export default function App() {
   const [isPredefined, setIsPredefined] = useState(false);
   const [msg,          setMsg]          = useState('');
 
-  const timerRef        = useRef<any>(null);
+  const timerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const debounceRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTickRef     = useRef<{ at: number; remaining: number } | null>(null);
   const charRef         = useRef('.');
   const powerRef        = useRef(10);
   const isPredefinedRef = useRef(false);
@@ -71,12 +73,29 @@ export default function App() {
     es.onmessage = (e) => {
       try {
         const d = JSON.parse(e.data);
-        setState(d.state ?? 'Idle'); setTime(d.remainingSeconds ?? 0); setOutput(d.output ?? '');
+        lastTickRef.current = { at: Date.now(), remaining: d.remainingSeconds ?? 0 };
+        setState(d.state ?? 'Idle');
+        setTime(d.remainingSeconds ?? 0);
+        setOutput(d.output ?? '');
+        charRef.current    = d.heatingChar ?? '.';
+        powerRef.current   = d.power ?? 10;
+        isPredefinedRef.current = d.isPredefined ?? false;
+        setIsPredefined(d.isPredefined ?? false);
       } catch { }
     };
     es.onerror = () => goOffline();
     return () => { es.close(); esRef.current = null; };
   }, [token, isOffline, goOffline]);
+
+  useEffect(() => {
+    if (isOffline || state !== 'Heating') return;
+    const id = setInterval(() => {
+      if (!lastTickRef.current) return;
+      const elapsed = Math.floor((Date.now() - lastTickRef.current.at) / 1000);
+      setTime(Math.max(0, lastTickRef.current.remaining - elapsed));
+    }, 250);
+    return () => clearInterval(id);
+  }, [state, isOffline]);
 
   useEffect(() => {
     if (!isOffline || !token || token === 'offline') return;
@@ -97,7 +116,7 @@ export default function App() {
           setTimeout(() => setOutput(''), 3000);
           return 0;
         }
-        setOutput(o => o + charRef.current.repeat(powerRef.current) + " ");
+        setOutput(o => o + charRef.current.repeat(powerRef.current) + ' ');
         return prev - 1;
       });
     }, 1000);
@@ -130,6 +149,12 @@ export default function App() {
     } finally { setLoading(false); }
   };
 
+  const handleQuickStart = () => {
+    if (debounceRef.current) return;
+    handleAction('quick-start');
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 600);
+  };
+
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
@@ -137,14 +162,20 @@ export default function App() {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <form onSubmit={async (e) => {
-          e.preventDefault(); setLoading(true);
+          e.preventDefault(); setLoading(true); setMsg('');
           try {
             const res = await api.post('/auth/login', { username: user, password: pass });
             sessionStorage.setItem('microwave_token', res.data.token); setToken(res.data.token);
-          } catch { setIsOffline(true); setToken('offline'); }
-          finally { setLoading(false); }
+          } catch (err: any) {
+            if (err.response?.status === 401) {
+              setMsg(err.response?.data?.mensagem ?? 'Credenciais inválidas.');
+            } else {
+              setIsOffline(true); setToken('offline');
+            }
+          } finally { setLoading(false); }
         }} className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 w-full max-w-sm shadow-2xl flex flex-col gap-4">
-          <h2 className="text-white text-xl font-black text-center uppercase tracking-tighter">Microwave Login</h2>
+          <h2 className="text-white text-xl font-black text-center uppercase tracking-tighter">Micro-ondas Digital</h2>
+          {msg && <p className="text-rose-400 text-xs text-center font-bold">{msg}</p>}
           <input className="bg-black border border-zinc-800 p-3 rounded-xl text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Usuario" value={user} onChange={e => setUser(e.target.value)} />
           <input type="password" title="senha" className="bg-black border border-zinc-800 p-3 rounded-xl text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} />
           <button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-xl font-black transition-all">ENTRAR</button>
@@ -181,7 +212,7 @@ export default function App() {
 
           <div className="grid grid-cols-2 gap-3">
             <button disabled={loading} onClick={() => handleAction('quick-start')} className="bg-emerald-600 hover:bg-emerald-500 p-4 rounded-xl font-black text-sm uppercase">Start</button>
-            <button disabled={loading || (state === 'Heating' && isPredefined)} onClick={() => handleAction('quick-start')} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase">+30s</button>
+            <button disabled={loading || (state === 'Heating' && isPredefined)} onClick={handleQuickStart} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase">+30s</button>
             <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm transition-all active:scale-95 focus:ring-2 focus:ring-rose-500 outline-none uppercase">Pausa / Cancelar</button>
           </div>
 
