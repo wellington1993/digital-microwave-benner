@@ -1,38 +1,36 @@
-# Micro-ondas Digital
+# microwave-digital-benner
 
-API REST de um micro-ondas digital com frontend React. Backend em .NET 8, frontend em React + TypeScript + TailwindCSS.
+Back-end em .NET 8 e Front-end em React. 
 
-## Arquitetura
+O projeto conta com um sistema de resiliência: se o back-end estiver fora do ar, a interface chaveia automaticamente para uma simulação local para permitir o teste das funções básicas.
 
-### Backend (.NET 8)
-- Clean Architecture com camadas Domain, Application, Infrastructure e Api
-- State Pattern para o ciclo de vida do forno (Idle, Heating, Paused)
-- Persistência em JSON local com controle de concorrência via SemaphoreSlim
-- Autenticação JWT com senha em SHA1
+## Como rodar
 
-### Frontend (React + Vite + TypeScript)
-- Modo offline: detecta automaticamente quando o backend está indisponível e ativa simulação local
-- Reconexão automática a cada 5s via probe
-- SSE para atualização em tempo real do estado do micro-ondas
-
-## Rodando localmente
-
-**Requisitos:** .NET 8 SDK e Node.js 24+
-
+### 1. Back-end (API)
 ```bash
-# Backend
-dotnet run --project backend/src/Microwave.Api
-
-# Frontend (outro terminal)
-cd frontend && npm install && npm run dev
+dotnet run --project backend/src/Microwave.Api --urls "http://localhost:5000"
 ```
 
-Ou com Docker:
-
+### 2. Front-end (Web)
 ```bash
-docker-compose up --build
+cd frontend
+npm install
+npm run dev
 ```
+Acesse em: `http://localhost:5173`
 
-## Deploy
+**Credenciais de acesso:** `admin` / `admin`
 
-O frontend é publicado via GitHub Actions no push para `main`.
+## Diferenciais da Implementação
+
+- **Resiliência Offline:** O front-end detecta queda de conexão e simula o funcionamento do micro-ondas via JavaScript.
+- **Sincronização em Tempo Real:** Atualização do visor via SSE (Server-Sent Events) sem necessidade de refresh.
+- **Clean Architecture:** Back-end desacoplado e 100% coberto por testes (xUnit).
+- **Segurança:** Autenticação JWT e senhas protegidas com Hashing SHA1.
+
+## Testes
+Para rodar os testes de ambas as camadas:
+```bash
+dotnet test backend/Microwave.sln
+cd frontend && npm test
+```
