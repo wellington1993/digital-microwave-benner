@@ -30,6 +30,7 @@ export default function App() {
   const powerRef        = useRef(10);
   const isPredefinedRef = useRef(false);
   const esRef           = useRef<EventSource | null>(null);
+  const lastTickRef     = useRef<{ at: number; remaining: number } | null>(null);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -38,6 +39,7 @@ export default function App() {
   const goOffline = useCallback(() => {
     esRef.current?.close();
     esRef.current = null;
+    lastTickRef.current = null;
     setIsOffline(true);
   }, []);
 
@@ -51,15 +53,31 @@ export default function App() {
       try {
         const d = JSON.parse(e.data);
         setState(d.state ?? 'Idle');
-        setTime(d.remainingSeconds ?? 0);
         setOutput(d.output ?? '');
+        if (d.state === 'Heating') {
+          lastTickRef.current = { at: Date.now(), remaining: d.remainingSeconds ?? 0 };
+        } else {
+          lastTickRef.current = null;
+          setTime(d.remainingSeconds ?? 0);
+        }
       } catch { }
     };
 
     es.onerror = () => goOffline();
 
-    return () => { es.close(); esRef.current = null; };
+    return () => { es.close(); esRef.current = null; lastTickRef.current = null; };
   }, [token, isOffline, goOffline]);
+
+  useEffect(() => {
+    if (isOffline) return;
+    const id = setInterval(() => {
+      const tick = lastTickRef.current;
+      if (!tick) return;
+      const elapsed = Math.floor((Date.now() - tick.at) / 1000);
+      setTime(Math.max(0, tick.remaining - elapsed));
+    }, 250);
+    return () => clearInterval(id);
+  }, [isOffline]);
 
   useEffect(() => {
     if (!isOffline || !token || token === 'offline') return;

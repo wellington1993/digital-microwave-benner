@@ -26,3 +26,11 @@ Optamos por utilizar `System.Text.Json` para persistencia em arquivo local, conf
 
 ## 5. Seguranca
 A autenticacao utiliza JWT (JSON Web Token). As senhas sao armazenadas utilizando o algoritmo SHA1. Embora existam algoritmos mais modernos, seguimos o padrao estabelecido para este desafio tecnico.
+
+## 6. Performance e Teste de Carga
+Para garantir a estabilidade do backend, todas as operacoes de I/O de arquivo sao assincronas e protegidas por `SemaphoreSlim`. 
+
+Incluimos um script de teste de carga (`docs/load-test.js`) utilizando a ferramenta **k6**. O script valida:
+- Vazao de autenticacao JWT.
+- Tempo de resposta dos endpoints de status sob concorrencia.
+- Resiliencia do sistema com 50 usuarios simultaneos.
