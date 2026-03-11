@@ -21,10 +21,6 @@ public sealed class ExceptionMiddleware
         {
             await _next(context);
         }
-        catch (OperationCanceledException)
-        {
-            // desconexão normal do cliente (SSE, polling) — sem resposta necessária
-        }
         catch (Exception ex)
         {
             await HandleExceptionAsync(context, ex);

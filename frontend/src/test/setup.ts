@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock do EventSource
+// Mock do EventSource (SSE)
 class EventSourceMock {
   onmessage: ((event: any) => void) | null = null;
   onerror: (() => void) | null = null;
@@ -9,7 +9,13 @@ class EventSourceMock {
   constructor(_url: string) {}
 }
 
-Object.defineProperty(window, 'EventSource', { value: EventSourceMock });
+if (typeof window !== 'undefined' && !window.EventSource) {
+  Object.defineProperty(window, 'EventSource', { 
+    value: EventSourceMock,
+    writable: true,
+    configurable: true 
+  });
+}
 
 // Mock do SessionStorage
 const storageMock = (() => {

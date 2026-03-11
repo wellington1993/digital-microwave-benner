@@ -3,13 +3,12 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Microwave.Application.DTOs;
 using Microwave.Application.Services;
 
 namespace Microwave.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -24,21 +23,22 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
-        var user = _config.GetSection("Auth:Users").Get<List<UserConfig>>()
-            ?.FirstOrDefault(u => u.Username == request.Username);
+        // Busca direta na seção para evitar erros de mapeamento de lista
+        var users = _config.GetSection("Auth:Users").GetChildren();
+        var user = users.FirstOrDefault(u => u["Username"] == request.Username);
 
-        if (user is null || !_authService.VerifyPassword(request.Password, user.PasswordHash))
+        if (user == null || !_authService.VerifyPassword(request.Password, user["PasswordHash"]!))
+        {
             return Unauthorized(new { mensagem = "Credenciais invalidas." });
+        }
 
-        var expiresAt = DateTime.UtcNow.AddHours(2);
-        var token = GenerateJwt(request.Username, expiresAt);
-
-        return Ok(new TokenResponse(token, expiresAt));
+        var token = GenerateJwt(request.Username);
+        return Ok(new { token, success = true });
     }
 
-    private string GenerateJwt(string username, DateTime expiresAt)
+    private string GenerateJwt(string username)
     {
-        var key  = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -48,10 +48,10 @@ public sealed class AuthController : ControllerBase
         };
 
         var token = new JwtSecurityToken(
-            issuer:            _config["Jwt:Issuer"],
-            audience:          _config["Jwt:Audience"],
-            claims:            claims,
-            expires:           expiresAt,
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(8),
             signingCredentials: creds
         );
 
@@ -59,4 +59,4 @@ public sealed class AuthController : ControllerBase
     }
 }
 
-public sealed record UserConfig(string Username, string PasswordHash);
+public record LoginRequest(string Username, string Password);

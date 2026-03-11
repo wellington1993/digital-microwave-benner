@@ -9,7 +9,7 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
     watch: {
       usePolling: true,
-      interval: 100,
+      interval: 50,
     },
     hmr: {
       protocol: 'ws',
