@@ -36,8 +36,8 @@ public sealed class ExceptionMiddleware
         
         var response = exception switch
         {
-            BusinessRuleException b => new { status = (int)HttpStatusCode.BadRequest,          mensagem = b.Message },
-            _                       => new { status = (int)HttpStatusCode.InternalServerError, mensagem = "Ocorreu um erro inesperado." }
+            BusinessRuleException b => new { mensagem = b.Message },
+            _                       => new { mensagem = "Ocorreu um erro inesperado." }
         };
 
         if (exception is not BusinessRuleException)
@@ -45,7 +45,7 @@ public sealed class ExceptionMiddleware
              _logger.LogError(exception, "Unhandled Exception: {Message}", exception.Message);
         }
 
-        context.Response.StatusCode = response.status;
+        context.Response.StatusCode = (exception is BusinessRuleException) ? 400 : 500;
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 }

@@ -1,11 +1,11 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microwave.Api.Middleware;
 using Microwave.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +29,7 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
             .Select(e => e.ErrorMessage)
             .FirstOrDefault();
 
-        return new BadRequestObjectResult(new { status = 400, mensagem = error });
+        return new BadRequestObjectResult(new { mensagem = error });
     };
 });
 
@@ -44,27 +44,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         o.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
+
         o.Events = new JwtBearerEvents
         {
-            OnChallenge = async ctx =>
+            OnChallenge = async context =>
             {
-                ctx.HandleResponse();
-                ctx.Response.StatusCode  = 401;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Nao autenticado." }));
+                context.HandleResponse();
+                context.Response.StatusCode = 401;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Nao autenticado." }));
             },
-            OnForbidden = async ctx =>
+            OnForbidden = async context =>
             {
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Acesso negado." }));
+                context.Response.StatusCode = 403;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Acesso negado." }));
             }
         };
     });
