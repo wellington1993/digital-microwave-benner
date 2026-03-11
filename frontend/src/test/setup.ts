@@ -1,12 +1,24 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
+// Mock do EventSource
+class EventSourceMock {
+  onmessage: ((event: any) => void) | null = null;
+  onerror: (() => void) | null = null;
+  close = vi.fn();
+  constructor(_url: string) {}
+}
+
+Object.defineProperty(window, 'EventSource', { value: EventSourceMock });
+
+// Mock do SessionStorage
 const storageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem:    (key: string) => store[key] ?? null,
-    setItem:    (key: string, value: string) => { store[key] = value; },
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value; },
     removeItem: (key: string) => { delete store[key]; },
-    clear:      () => { store = {}; },
+    clear: () => { store = {}; }
   };
 })();
 

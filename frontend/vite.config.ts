@@ -7,14 +7,18 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    watch: { usePolling: true, interval: 50 },
-    hmr: { overlay: true, timeout: 30000 },
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
+    hmr: {
+      overlay: true,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-        ws: true,
       }
     }
   },

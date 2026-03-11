@@ -6,7 +6,7 @@ const PREDEFINED_PROGRAMS = [
   { name: 'Leite',         durationSeconds: 300, power: 5, heatingChar: 'o' },
   { name: 'Carnes de boi', durationSeconds: 840, power: 4, heatingChar: 'b' },
   { name: 'Frango',        durationSeconds: 480, power: 7, heatingChar: 'f' },
-  { name: 'Feijao',        durationSeconds: 480, power: 9, heatingChar: 'j' },
+  { name: 'Feijão',        durationSeconds: 480, power: 9, heatingChar: 'j' },
 ];
 
 const STATE_LABEL: Record<string, string> = {
@@ -41,9 +41,8 @@ export default function App() {
     setIsOffline(true);
   }, []);
 
-  // Abre SSE quando online
   useEffect(() => {
-    if (!token || isOffline) return;
+    if (!token || isOffline || token === 'offline') return;
 
     const es = new EventSource('/api/microwave/stream');
     esRef.current = es;
@@ -54,7 +53,7 @@ export default function App() {
         setState(d.state ?? 'Idle');
         setTime(d.remainingSeconds ?? 0);
         setOutput(d.output ?? '');
-      } catch { /* frame invalido */ }
+      } catch { }
     };
 
     es.onerror = () => goOffline();
@@ -62,7 +61,6 @@ export default function App() {
     return () => { es.close(); esRef.current = null; };
   }, [token, isOffline, goOffline]);
 
-  // Quando offline, tenta reconectar a cada 5s
   useEffect(() => {
     if (!isOffline || !token || token === 'offline') return;
 
@@ -73,13 +71,12 @@ export default function App() {
         setState('Idle'); setTime(0); setOutput(''); setIsPredefined(false);
         isPredefinedRef.current = false;
         setIsOffline(false);
-      } catch { /* backend ainda fora */ }
+      } catch { }
     }, 5000);
 
     return () => clearInterval(probe);
   }, [isOffline, token, stopTimer]);
 
-  // Timer local — ativo apenas no modo offline
   useEffect(() => {
     if (!isOffline || state !== 'Heating') { stopTimer(); return; }
 
@@ -89,7 +86,7 @@ export default function App() {
         if (prev <= 1) {
           stopTimer();
           setState('Idle');
-          setOutput(o => o.trim() + ' Aquecimento concluido.');
+          setOutput(o => o.trim() + ' Aquecimento concluído.');
           setTimeout(() => setOutput(''), 2500);
           return 0;
         }
@@ -112,7 +109,7 @@ export default function App() {
         setIsOffline(true);
         setToken('offline');
       } else {
-        setMsg(err.response?.data?.mensagem || 'Credenciais invalidas.');
+        setMsg(err.response?.data?.mensagem || 'Credenciais inválidas.');
       }
     } finally { setLoading(false); }
   };
@@ -120,7 +117,7 @@ export default function App() {
   const simAction = useCallback((action: string, data: any = {}) => {
     if (action === 'quick-start') {
       if (state === 'Heating') {
-        if (isPredefinedRef.current) { setMsg('Programas pre-definidos nao permitem acrescimo de tempo.'); return; }
+        if (isPredefinedRef.current) { setMsg('Programas pré-definidos não permitem acréscimo de tempo.'); return; }
         setTime(t => t + 30);
       } else if (state === 'Paused') {
         setState('Heating');
@@ -129,9 +126,9 @@ export default function App() {
         setIsPredefined(false); setOutput(''); setTime(30); setState('Heating');
       }
     } else if (action === 'start-program') {
-      if (state !== 'Idle') { setMsg('O micro-ondas ja esta em funcionamento.'); return; }
+      if (state !== 'Idle') { setMsg('O micro-ondas já está em funcionamento.'); return; }
       const p = PREDEFINED_PROGRAMS.find(x => x.name === data.programName);
-      if (!p) { setMsg('Programa nao encontrado.'); return; }
+      if (!p) { setMsg('Programa não encontrado.'); return; }
       charRef.current = p.heatingChar; powerRef.current = p.power; isPredefinedRef.current = true;
       setIsPredefined(true); setOutput(''); setTime(p.durationSeconds); setState('Heating');
     } else if (action === 'pause-cancel') {
@@ -147,7 +144,8 @@ export default function App() {
     if (isOffline) { simAction(action, data); setLoading(false); return; }
 
     try {
-      const res = await api.post(`/microwave/${action}`, data);
+      const endpoint = action === 'start-program' ? '/microwave/start-program' : `/microwave/${action}`;
+      const res = await api.post(endpoint, data);
       setState(res.data.state);
       setTime(res.data.remainingSeconds);
       setOutput(res.data.output ?? '');
@@ -157,9 +155,10 @@ export default function App() {
       if (err.response?.status === 401) {
         sessionStorage.removeItem('microwave_token'); setToken(null);
       } else if (!err.response) {
-        goOffline(); simAction(action, data);
+        goOffline();
+        simAction(action, data);
       } else {
-        setMsg(err.response?.data?.mensagem || 'Erro ao processar.');
+        setMsg(err.response.data?.mensagem || 'Erro ao processar.');
       }
     } finally { setLoading(false); }
   }, [loading, isOffline, simAction, goOffline]);
@@ -183,7 +182,7 @@ export default function App() {
           </button>
           <button type="button" onClick={() => { setIsOffline(true); setToken('offline'); }}
             className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest hover:text-zinc-400 transition-colors">
-            Modo Simulacao
+            Modo Simulação
           </button>
         </form>
       </div>
@@ -194,7 +193,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4">
-
       {isOffline && (
         <div role="alert" className="w-full max-w-2xl mb-4 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-center border bg-amber-950/50 border-amber-700/60 text-amber-300">
           Modo Offline — Backend indisponivel. Reconectando automaticamente...
@@ -203,11 +201,10 @@ export default function App() {
       )}
 
       <main className={`bg-zinc-900 p-4 md:p-8 rounded-3xl border-4 flex flex-col md:flex-row gap-8 shadow-2xl transition-colors duration-500 ${isOffline ? 'border-amber-900/40' : 'border-zinc-800'}`}>
-
         <section className="flex flex-col gap-4">
           <div className="w-full md:w-[500px] min-h-[200px] md:min-h-[280px] bg-black border-4 border-zinc-800 rounded-2xl flex items-center justify-center p-8 relative overflow-hidden shadow-inner"
             aria-live="polite" aria-label="Visor de aquecimento">
-            {isHeating && <div className="absolute inset-0 bg-yellow-500/5 animate-pulse" />}
+            <div className={`absolute inset-0 bg-yellow-500/10 transition-opacity ${isHeating ? 'opacity-100' : 'opacity-0'}`} />
             <p className="text-emerald-500 font-mono text-lg md:text-xl break-all text-center leading-relaxed z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
               {output || (state === 'Idle' ? 'SISTEMA PRONTO' : '')}
             </p>
@@ -244,10 +241,11 @@ export default function App() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <h2 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest ml-1">Programas automaticos</h2>
+            <h2 className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest ml-1">Programas automáticos</h2>
             <div className="grid grid-cols-2 gap-2">
               {PREDEFINED_PROGRAMS.map(p => (
                 <button key={p.name} disabled={loading || state !== 'Idle'}
+                  title={state !== 'Idle' ? 'Micro-ondas em uso' : undefined}
                   onClick={() => handleAction('start-program', { programName: p.name })}
                   className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 p-3 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all active:scale-95 focus:ring-2 focus:ring-zinc-600 outline-none text-left truncate">
                   {p.name}
