@@ -22,8 +22,8 @@ export default function App() {
   const [state,        setState]        = useState('Idle');
   const [time,         setTime]         = useState(0);
   const [output,       setOutput]       = useState('');
-  const [isPredefined, setIsPredefined] = useState(false);
   const [msg,          setMsg]          = useState('');
+  const [isPredefined, setIsPredefined] = useState(false);
 
   const timerRef        = useRef<any>(null);
   const charRef         = useRef('.');
