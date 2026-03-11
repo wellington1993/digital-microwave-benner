@@ -1,6 +1,8 @@
 @Microwave.Api_HostAddress = http://localhost:5023
 
-GET {{Microwave.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Health Check
+GET {{Microwave.Api_HostAddress}}/health
 
-###
+### Get Microwaves
+GET {{Microwave.Api_HostAddress}}/api/microwave
+Authorization: Bearer {token}
