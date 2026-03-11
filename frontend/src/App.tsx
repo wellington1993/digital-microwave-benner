@@ -217,7 +217,7 @@ export default function App() {
         <section className="flex flex-col gap-4">
           <div className="w-full md:w-[500px] h-64 md:h-80 bg-black border-4 border-zinc-800 rounded-2xl relative overflow-hidden flex items-center justify-center p-8 shadow-inner">
             <div className={`absolute inset-0 bg-yellow-500/10 transition-opacity ${state === 'Heating' ? 'opacity-100' : 'opacity-0'}`}></div>
-            <p className="text-emerald-500 font-mono text-lg md:text-2xl break-all text-center leading-relaxed z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+            <p className="text-emerald-500 font-mono text-lg md:text-2xl break-all text-center leading-relaxed z-10">
               {output || (state === 'Idle' ? 'PRONTO' : '')}
             </p>
           </div>
@@ -225,15 +225,15 @@ export default function App() {
         </section>
 
         <section className="w-full md:w-72 flex flex-col gap-6">
-          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-inner flex flex-col items-center font-mono">
+          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 flex flex-col items-center font-mono shadow-inner">
             <div className="text-5xl md:text-6xl text-emerald-400 tracking-tighter" aria-label="Tempo restante">{fmt(time)}</div>
             <div className={`text-[10px] font-black uppercase tracking-widest mt-2 ${state === 'Heating' ? 'text-rose-500 animate-pulse' : 'text-zinc-600'}`}>{STATE_LABEL[state] || state}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button disabled={loading} onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })} className="bg-emerald-600 hover:bg-emerald-500 p-4 rounded-xl font-black text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-emerald-500">Start</button>
-            <button disabled={loading} onClick={handleQuickStart} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-zinc-500">+30s</button>
-            <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-rose-500">Pausa / Cancelar</button>
+            <button disabled={loading} onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })} className="bg-emerald-600 hover:bg-emerald-500 p-4 rounded-xl font-black text-sm uppercase transition-all active:scale-95">Start</button>
+            <button disabled={loading} onClick={handleQuickStart} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95">+30s</button>
+            <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95">Pausa / Cancelar</button>
           </div>
 
           <div className="flex flex-col gap-2">
