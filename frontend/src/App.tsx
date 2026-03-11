@@ -25,7 +25,7 @@ export default function App() {
   const [isPredefined, setIsPredefined] = useState(false);
   const [msg,          setMsg]          = useState('');
 
-  const timerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef        = useRef<number | null>(null);
   const charRef         = useRef('.');
   const powerRef        = useRef(10);
   const isPredefinedRef = useRef(false);

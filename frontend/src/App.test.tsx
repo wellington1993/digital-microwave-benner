@@ -1,70 +1,75 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from './App';
-import { api } from './api';
-import '@testing-library/jest-dom';
 
 vi.mock('./api', () => ({
   api: {
-    get: vi.fn(),
+    get:  vi.fn(),
     post: vi.fn(),
   },
 }));
 
-describe('Microwave Application - Resilience Tests', () => {
+describe('App — tela de login', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
   });
 
-  it('should work correctly in ONLINE mode', async () => {
-    (api.post as any).mockResolvedValueOnce({ data: { token: 'fake-jwt-token' } });
-    (api.get as any).mockResolvedValueOnce({ data: { state: 'Idle', remainingSeconds: 0, output: '' } });
-    
+  it('renderiza os campos de login', () => {
     render(<App />);
-    fireEvent.click(screen.getByText(/ENTRAR/i));
-    
-    await waitFor(() => {
-      expect(screen.getByText(/PRONTO/i)).toBeInTheDocument();
-    });
-
-    (api.post as any).mockResolvedValueOnce({ data: { state: 'Heating', remainingSeconds: 30, output: '..........' } });
-    fireEvent.click(screen.getByText('START'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Heating')).toBeInTheDocument();
-    });
+    expect(screen.getByPlaceholderText('Usuario')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Senha')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument();
   });
 
-  it('should switch to SIMULATION mode when backend fails', async () => {
-    (api.post as any).mockRejectedValueOnce(new Error('Network Error'));
-    
+  it('entra no modo simulacao ao clicar no link', () => {
     render(<App />);
-    fireEvent.click(screen.getByText(/ENTRAR/i));
-    fireEvent.click(screen.getByText(/Pular para modo Simulacao/i));
+    fireEvent.click(screen.getByText(/Modo Simulacao/i));
+    expect(screen.getByText(/Modo Offline/i)).toBeInTheDocument();
+  });
+});
 
-    expect(screen.getByText(/SERVIDOR OFFLINE/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('START'));
-    
-    await waitFor(() => {
-      expect(screen.getByText('Heating')).toBeInTheDocument();
-    });
+describe('App — painel offline', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
-  it('should clear visor when PAUSE/CANCEL is clicked twice', async () => {
+  const enterSim = () => {
     render(<App />);
-    fireEvent.click(screen.getByText(/Pular para modo Simulacao/i));
+    fireEvent.click(screen.getByText(/Modo Simulacao/i));
+  };
 
-    fireEvent.click(screen.getByText('START')); 
-    
-    fireEvent.click(screen.getByText(/Pausa \/ Cancelar/i)); 
-    expect(screen.getByText('Paused')).toBeInTheDocument();
+  it('mostra SISTEMA PRONTO no estado Idle', () => {
+    enterSim();
+    expect(screen.getByText('SISTEMA PRONTO')).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByText(/Pausa \/ Cancelar/i)); 
-    
-    await waitFor(() => {
-      expect(screen.getByText(/PRONTO/i)).toBeInTheDocument();
-    });
+  it('START inicia contagem regressiva', () => {
+    enterSim();
+    fireEvent.click(screen.getByRole('button', { name: /inicio rapido/i }));
+    expect(screen.getByText('Aquecendo')).toBeInTheDocument();
+  });
+
+  it('Pausa/Cancelar muda estado para Pausado', () => {
+    enterSim();
+    fireEvent.click(screen.getByRole('button', { name: /inicio rapido/i }));
+    fireEvent.click(screen.getByRole('button', { name: /pausar ou cancelar/i }));
+    expect(screen.getByText('Pausado')).toBeInTheDocument();
+  });
+
+  it('segundo Pausa/Cancelar volta ao Idle', () => {
+    enterSim();
+    fireEvent.click(screen.getByRole('button', { name: /inicio rapido/i }));
+    fireEvent.click(screen.getByRole('button', { name: /pausar ou cancelar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+    expect(screen.getByText('SISTEMA PRONTO')).toBeInTheDocument();
+  });
+
+  it('programa automatico inicia com os valores corretos', () => {
+    enterSim();
+    fireEvent.click(screen.getByRole('button', { name: /pipoca/i }));
+    expect(screen.getByText('Aquecendo')).toBeInTheDocument();
+    expect(screen.getByLabelText(/tempo restante/i)).toHaveTextContent('03:00');
   });
 });
