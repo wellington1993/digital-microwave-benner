@@ -1,4 +1,4 @@
-# .NET
+# .NET Backend
 [Bb]in/
 [Oo]bj/
 *.user
@@ -13,20 +13,18 @@ data/programs.json
 .vs/
 .vscode/
 
-# Node
+# Node.js / Frontend React
 node_modules/
-**/node_modules/
 dist/
-**/dist/
-.npm/
-.cache/
-*.tsbuildinfo
-
-# Env
+dist-ssr/
+*.local
 .env
+.env.*
 .env.local
-.env.*.local
-
-# OS
-.DS_Store
-Thumbs.db
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
