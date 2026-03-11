@@ -1,36 +1,38 @@
-# Microwave Digital - Monorepo
+# Micro-ondas Digital
 
-Este projeto e uma solucao full-stack para o desafio do micro-ondas digital, focada em resiliencia e simplicidade.
+API REST de um micro-ondas digital com frontend React. Backend em .NET 8, frontend em React + TypeScript + TailwindCSS.
 
-## Arquitetura e Decisoes de Design
-
-A solucao segue o principio KISS (Keep It Simple, Stupid) para garantir alta performance e facilidade de manutencao.
+## Arquitetura
 
 ### Backend (.NET 8)
-- Clean Architecture: Divisao clara entre Dominio, Aplicacao, Infraestrutura e API.
-- State Pattern: Gerenciamento do ciclo de vida do forno (Idle, Heating, Paused) sem condicionais complexas.
-- Persistencia JSON: Armazenamento em arquivo com controle de concorrencia via SemaphoreSlim.
-- Seguranca: Autenticacao JWT e Hashing SHA1 conforme especificacao.
+- Clean Architecture com camadas Domain, Application, Infrastructure e Api
+- State Pattern para o ciclo de vida do forno (Idle, Heating, Paused)
+- Persistência em JSON local com controle de concorrência via SemaphoreSlim
+- Autenticação JWT com senha em SHA1
 
-### Frontend (React + Vite + TS)
-- Resiliencia Offline: O sistema possui um interceptador Axios que detecta falhas de rede. Caso o backend esteja indisponivel, a interface ativa automaticamente o modo de simulacao local para permitir o uso das funcoes basicas (Nivel 1 e 2).
-- TailwindCSS: Estilizacao focada em mimetizar um painel real de micro-ondas.
+### Frontend (React + Vite + TypeScript)
+- Modo offline: detecta automaticamente quando o backend está indisponível e ativa simulação local
+- Reconexão automática a cada 5s via probe
+- SSE para atualização em tempo real do estado do micro-ondas
 
-## Execucao Local
+## Rodando localmente
 
-### Requisitos
-- .NET 8 SDK
-- Node.js 20+
+**Requisitos:** .NET 8 SDK e Node.js 24+
 
-### Passo a Passo
-1. Clone o repositorio.
-2. Inicie o Backend: `dotnet run --project backend/src/Microwave.Api`
-3. Inicie o Frontend: `cd frontend && npm install && npm run dev`
+```bash
+# Backend
+dotnet run --project backend/src/Microwave.Api
 
-Alternativamente, utilize o Docker Compose:
-`docker-compose up --build`
+# Frontend (outro terminal)
+cd frontend && npm install && npm run dev
+```
 
-## CI/CD e URL Publica
+Ou com Docker:
 
-O frontend e publicado automaticamente no GitHub Pages atraves do GitHub Actions configurado em `.github/workflows/deploy.yml`. 
-Devido a natureza do GitHub Pages, a aplicacao utiliza o roteamento baseado em hash (HashRouter) para garantir a navegabilidade.
+```bash
+docker-compose up --build
+```
+
+## Deploy
+
+O frontend é publicado via GitHub Actions no push para `main`.
