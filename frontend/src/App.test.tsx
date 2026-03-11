@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from './App';
 import { api } from './api';
@@ -41,9 +41,9 @@ describe('Microwave Application - Resilience Tests', () => {
     
     render(<App />);
     fireEvent.click(screen.getByText(/ENTRAR/i));
-    fireEvent.click(screen.getByText(/Pular para modo Simulaçao/i));
+    fireEvent.click(screen.getByText(/Pular para modo Simulacao/i));
 
-    expect(screen.getByText(/BACKEND OFFLINE/i)).toBeInTheDocument();
+    expect(screen.getByText(/SERVIDOR OFFLINE/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('START'));
     
@@ -54,14 +54,14 @@ describe('Microwave Application - Resilience Tests', () => {
 
   it('should clear visor when PAUSE/CANCEL is clicked twice', async () => {
     render(<App />);
-    fireEvent.click(screen.getByText(/Pular para modo Simulaçao/i));
+    fireEvent.click(screen.getByText(/Pular para modo Simulacao/i));
 
-    fireEvent.click(screen.getByText('START')); // Inicia
+    fireEvent.click(screen.getByText('START')); 
     
-    fireEvent.click(screen.getByText(/Pause \/ Cancel/i)); // Pausa (1o clique)
+    fireEvent.click(screen.getByText(/Pausa \/ Cancelar/i)); 
     expect(screen.getByText('Paused')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/Pause \/ Cancel/i)); // Cancela (2o clique)
+    fireEvent.click(screen.getByText(/Pausa \/ Cancelar/i)); 
     
     await waitFor(() => {
       expect(screen.getByText(/PRONTO/i)).toBeInTheDocument();
