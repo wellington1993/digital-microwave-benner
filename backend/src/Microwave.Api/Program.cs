@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -21,7 +22,6 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
 {
-    // Harmonizaçao de erros de validaçao automatica (Nivel 4)
     options.InvalidModelStateResponseFactory = context =>
     {
         var error = context.ModelState.Values
@@ -52,6 +52,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
+        o.Events = new JwtBearerEvents
+        {
+            OnChallenge = async ctx =>
+            {
+                ctx.HandleResponse();
+                ctx.Response.StatusCode  = 401;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Nao autenticado." }));
+            },
+            OnForbidden = async ctx =>
+            {
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.WriteAsync(JsonSerializer.Serialize(new { mensagem = "Acesso negado." }));
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -76,4 +91,3 @@ app.MapControllers();
 app.Run();
 
 public partial class Program { }
- Applied fuzzy match at line 1.

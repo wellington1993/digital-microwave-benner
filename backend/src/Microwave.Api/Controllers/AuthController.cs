@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microwave.Application.DTOs;
 using Microwave.Application.Services;
 
 namespace Microwave.Api.Controllers;
@@ -23,7 +24,6 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
     {
-        // Busca direta na seção para evitar erros de mapeamento de lista
         var users = _config.GetSection("Auth:Users").GetChildren();
         var user = users.FirstOrDefault(u => u["Username"] == request.Username);
 
@@ -51,12 +51,10 @@ public sealed class AuthController : ControllerBase
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddHours(8),
+            expires: DateTime.UtcNow.AddHours(2),
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-
-public record LoginRequest(string Username, string Password);

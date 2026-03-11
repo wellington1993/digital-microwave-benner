@@ -19,7 +19,7 @@ public record StartProgramRequest(
 
 public record CreateProgramRequest(
     [Required(ErrorMessage = "O nome e obrigatorio.")]
-    [StringLength(50, MinimumLength = 3)]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = "O nome deve ter entre 3 e 50 caracteres.")]
     string Name,
 
     [Required(ErrorMessage = "O alimento e obrigatorio.")]
@@ -31,7 +31,7 @@ public record CreateProgramRequest(
     [Range(1, 10, ErrorMessage = "A potencia deve ser entre 1 e 10.")]
     int Power,
 
-    [Required]
+    [Range(1, char.MaxValue, ErrorMessage = "O caractere de aquecimento e obrigatorio.")]
     char HeatingChar,
 
     string? Instructions = null

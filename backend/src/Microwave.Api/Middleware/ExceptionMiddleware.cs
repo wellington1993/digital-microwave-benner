@@ -21,6 +21,7 @@ public sealed class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             await HandleExceptionAsync(context, ex);
