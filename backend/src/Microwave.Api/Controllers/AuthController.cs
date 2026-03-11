@@ -58,5 +58,3 @@ public sealed class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-
-public record LoginRequest(string Username, string Password);
