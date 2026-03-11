@@ -7,7 +7,6 @@ using Microwave.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuraçao do CORS ultra-permissiva para o desafio
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -72,9 +71,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
-// CORS deve ser o primeiro para lidar com pre-flight OPTIONS
 app.UseCors("AllowAll");
-
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseSwagger();

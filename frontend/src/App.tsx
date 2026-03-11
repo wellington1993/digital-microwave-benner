@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from './api';
 
 const PREDEFINED_PROGRAMS = [
-  { name: 'Pipoca', alimento: 'Pipoca (de micro-ondas)', durationSeconds: 180, power: 7, heatingChar: '*', instructions: 'Observar o barulho de estouros do milho...', isPredefined: true },
-  { name: 'Leite', alimento: 'Leite', durationSeconds: 300, power: 5, heatingChar: 'o', instructions: 'Cuidado com aquecimento de liquidos...', isPredefined: true },
-  { name: 'Carnes de boi', alimento: 'Carne em pedaço ou fatias', durationSeconds: 840, power: 4, heatingChar: 'b', instructions: 'Interrompa o processo na metade...', isPredefined: true },
-  { name: 'Frango', alimento: 'Frango (qualquer corte)', durationSeconds: 480, power: 7, heatingChar: 'f', instructions: 'Interrompa o processo na metade...', isPredefined: true },
+  { name: 'Pipoca', alimento: 'Pipoca (de micro-ondas)', durationSeconds: 180, power: 7, heatingChar: '*', instructions: 'Observar o barulho de estouros...', isPredefined: true },
+  { name: 'Leite', alimento: 'Leite', durationSeconds: 300, power: 5, heatingChar: 'o', instructions: 'Cuidado com choque térmico...', isPredefined: true },
+  { name: 'Carnes de boi', alimento: 'Carne em pedaço', durationSeconds: 840, power: 4, heatingChar: 'b', instructions: 'Interrompa na metade...', isPredefined: true },
+  { name: 'Frango', alimento: 'Frango (qualquer corte)', durationSeconds: 480, power: 7, heatingChar: 'f', instructions: 'Interrompa na metade...', isPredefined: true },
   { name: 'Feijão', alimento: 'Feijão congelado', durationSeconds: 480, power: 9, heatingChar: 'j', instructions: 'Deixe o recipiente destampado...', isPredefined: true }
 ];
 
@@ -19,6 +19,10 @@ const STATE_MAP: Record<string, string> = {
 export default function App() {
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(sessionStorage.getItem('microwave_token'));
+  const [user, setUser] = useState('admin');
+  const [pass, setPass] = useState('admin');
+  
   const [state, setState] = useState('Idle');
   const [time, setTime] = useState(0);
   const [output, setOutput] = useState('');
@@ -30,9 +34,25 @@ export default function App() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    api.get('/microwave/status').catch(() => setIsOffline(true));
-    window.addEventListener('backend-offline', () => setIsOffline(true));
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('backend-offline', handleOffline);
+    return () => window.removeEventListener('backend-offline', handleOffline);
   }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/login', { username: user, password: pass });
+      sessionStorage.setItem('microwave_token', res.data.token);
+      setToken(res.data.token);
+      setMsg('');
+    } catch (err: any) {
+      setMsg(err.response?.data?.message || 'Falha na conexão.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stopTimer = () => {
     if (timerRef.current) {
@@ -48,7 +68,7 @@ export default function App() {
         if (prev <= 1) {
           stopTimer();
           setState('Idle');
-          setOutput((o) => o + " Aquecimento concluido");
+          setOutput((o) => o + " Aquecimento concluído");
           return 0;
         }
         setOutput((o) => o + char.repeat(power) + " ");
@@ -65,43 +85,35 @@ export default function App() {
     if (isOffline) {
       if (action === 'start') {
         if (state === 'Heating') {
-          if (isPredefined) {
-            setMsg('Nao e permitido acrescimo de tempo em programas pre-definidos.');
-          } else {
-            setTime(t => Math.min(t + 30, 120));
-          }
+          if (isPredefined) { setMsg('Não permitido acréscimo em programas fixos.'); }
+          else { setTime(t => Math.min(t + 30, 120)); }
         } else {
           const d = data || { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false };
-          setTime(d.durationSeconds);
-          setPower(d.power);
-          setChar(d.heatingChar);
-          setIsPredefined(d.isPredefined);
-          setState('Heating');
-          setOutput('');
+          setTime(d.durationSeconds); setPower(d.power); setChar(d.heatingChar);
+          setIsPredefined(d.isPredefined); setState('Heating'); setOutput('');
         }
-      } else if (action === 'pause') {
-        if (state === 'Heating') {
-          setState('Paused');
-          stopTimer();
-        } else {
-          setState('Idle');
-          setTime(0);
-          setOutput('');
-        }
+      } else if (action === 'pause-cancel') {
+        if (state === 'Heating') { setState('Paused'); stopTimer(); }
+        else { setState('Idle'); setTime(0); setOutput(''); }
       }
       setLoading(false);
       return;
     }
 
     try {
-      const res = await api.post(`/microwave/${action}`, data);
+      const endpoint = action === 'start-program' ? '/microwave/start-program' : `/microwave/${action}`;
+      const res = await api.post(endpoint, data);
       setState(res.data.state);
       setTime(res.data.remainingSeconds);
       setOutput(res.data.output);
-    } catch {
-      setIsOffline(true);
-      // Fallback imediato para local se falhar
-      handleAction(action, data);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setToken(null);
+        sessionStorage.removeItem('microwave_token');
+      } else {
+        setIsOffline(true);
+        handleAction(action, data);
+      }
     } finally {
       setLoading(false);
     }
@@ -114,82 +126,57 @@ export default function App() {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+  if (!token && !isOffline) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <form onSubmit={handleLogin} className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 w-full max-w-sm shadow-2xl">
+          <h2 className="text-white text-2xl font-black mb-8 text-center tracking-tighter">MICROWAVE LOGIN</h2>
+          {msg && <p className="text-rose-500 text-xs mb-6 text-center font-bold uppercase">{msg}</p>}
+          <input className="w-full bg-black border border-zinc-800 p-3 rounded-xl mb-4 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all" placeholder="Usuário" value={user} onChange={e => setUser(e.target.value)} />
+          <input className="w-full bg-black border border-zinc-800 p-3 rounded-xl mb-8 text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all" type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} />
+          <button disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white p-4 rounded-xl font-black transition-all">ENTRAR</button>
+          <button type="button" onClick={() => setIsOffline(true)} className="w-full mt-6 text-zinc-600 text-[10px] uppercase font-bold tracking-widest hover:text-zinc-400 transition-colors">Modo Simulação</button>
+        </form>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4 font-sans selection:bg-emerald-500/30">
-      
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-4 font-sans">
       {isOffline && (
-        <div role="alert" className="bg-amber-900/40 border border-amber-500/50 w-full max-w-2xl p-4 mb-6 rounded-xl text-sm text-center text-amber-200 backdrop-blur-sm">
-          <strong>SISTEMA EM MODO DE SEGURANÇA:</strong> Backend offline. Funçoes basicas operando via simulaçao local.
+        <div role="alert" className="bg-amber-900/40 border border-amber-500/50 w-full max-w-2xl p-4 mb-6 rounded-xl text-xs text-center text-amber-200 backdrop-blur-sm">
+          <strong>SISTEMA EM MODO DE SEGURANÇA:</strong> Backend offline. Funções básicas via simulação local.
         </div>
       )}
 
       <main className={`bg-zinc-900 p-4 md:p-8 rounded-3xl border-4 flex flex-col md:flex-row gap-8 shadow-2xl transition-all duration-500 ${isOffline ? 'border-amber-900/50' : 'border-zinc-800'}`}>
-        
-        {/* Porta do Micro-ondas */}
         <section className="flex flex-col gap-4">
           <div className="w-full md:w-[500px] h-64 md:h-80 bg-black border-4 border-zinc-800 rounded-2xl relative overflow-hidden flex items-center justify-center p-8 shadow-inner">
             <div className={`absolute inset-0 bg-yellow-500/10 transition-opacity duration-700 ${state === 'Heating' ? 'opacity-100' : 'opacity-0'}`}></div>
             <div className="text-emerald-500 font-mono text-lg md:text-2xl break-all text-center leading-relaxed z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
-              {output || (state === 'Idle' ? 'PRONTO PARA USO' : '')}
+              {output || (state === 'Idle' ? 'SISTEMA PRONTO' : '')}
             </div>
           </div>
-          {msg && <p className="text-rose-400 text-xs md:text-sm italic text-center animate-bounce">{msg}</p>}
+          {msg && <p className="text-rose-400 text-xs text-center font-bold">{msg}</p>}
         </section>
 
-        {/* Painel de Controle */}
         <section className="w-full md:w-72 flex flex-col gap-6">
-          {/* Visor Digital */}
-          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-inner flex flex-col items-center">
-            <div className="text-5xl md:text-6xl font-mono text-emerald-400 tracking-tighter" aria-label="Tempo restante">
-              {formatTime(time)}
-            </div>
-            <div className={`text-xs font-black uppercase tracking-[0.2em] mt-2 ${state === 'Heating' ? 'text-rose-500 animate-pulse' : 'text-zinc-600'}`}>
-              {STATE_MAP[state] || state}
-            </div>
+          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-inner flex flex-col items-center font-mono">
+            <div className="text-5xl md:text-6xl text-emerald-400 tracking-tighter" aria-label="Tempo restante">{formatTime(time)}</div>
+            <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${state === 'Heating' ? 'text-rose-500 animate-pulse' : 'text-zinc-600'}`}>{STATE_MAP[state] || state}</div>
           </div>
 
-          {/* Botoes de Comando */}
           <div className="grid grid-cols-2 gap-3">
-            <button 
-              disabled={loading}
-              onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 p-4 rounded-xl font-black text-sm transition-all active:scale-95 focus:ring-2 focus:ring-emerald-500 outline-none"
-              aria-label="Iniciar aquecimento de 30 segundos"
-            >
-              START
-            </button>
-            <button 
-              disabled={loading || (state === 'Heating' && isPredefined)}
-              onClick={() => handleAction('start')}
-              className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 p-4 rounded-xl font-bold text-sm transition-all active:scale-95 focus:ring-2 focus:ring-zinc-500 outline-none"
-              aria-label="Acrescentar 30 segundos"
-            >
-              +30s
-            </button>
-            <button 
-              disabled={loading}
-              onClick={() => handleAction('pause')}
-              className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm transition-all active:scale-95 focus:ring-2 focus:ring-rose-500 outline-none uppercase"
-              aria-label="Pausar ou cancelar aquecimento"
-            >
-              Pausa / Cancelar
-            </button>
+            <button disabled={loading} onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })} className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 p-4 rounded-xl font-black text-sm transition-all active:scale-95 focus:ring-2 focus:ring-emerald-500 outline-none">START</button>
+            <button disabled={loading || (state === 'Heating' && isPredefined)} onClick={() => handleAction('start')} className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 p-4 rounded-xl font-bold text-sm transition-all active:scale-95 focus:ring-2 focus:ring-zinc-500 outline-none">+30s</button>
+            <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm transition-all active:scale-95 focus:ring-2 focus:ring-rose-500 outline-none uppercase">Pausa / Cancelar</button>
           </div>
 
-          {/* Grade de Programas */}
           <div className="flex flex-col gap-2">
-            <h2 className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest ml-1">Programas Automaticos</h2>
+            <h2 className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest ml-1">Programas Automáticos</h2>
             <div className="grid grid-cols-2 gap-2">
               {PREDEFINED_PROGRAMS.map(p => (
-                <button 
-                  key={p.name}
-                  disabled={loading || state !== 'Idle'}
-                  onClick={() => handleAction('start', p)}
-                  className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 p-3 rounded-lg text-[11px] font-bold transition-all uppercase text-left truncate px-3 focus:ring-2 focus:ring-zinc-600 outline-none"
-                  title={p.alimento}
-                >
-                  {p.name}
-                </button>
+                <button key={p.name} disabled={loading || state !== 'Idle'} onClick={() => handleAction('start-program', { programName: p.name })} className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 p-3 rounded-lg text-[11px] font-bold transition-all uppercase text-left truncate px-3 focus:ring-2 focus:ring-zinc-600 outline-none" title={p.alimento}>{p.name}</button>
               ))}
             </div>
           </div>
