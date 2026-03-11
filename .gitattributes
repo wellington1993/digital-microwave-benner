@@ -1,9 +1,16 @@
-# Força LF em todos os arquivos de texto
+# Normalizacao de fim de linha
 * text=auto eol=lf
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.ps1 text eol=crlf
 
-# Binários — sem conversão
-*.png binary
+# Garantir que binarios nao sejam corrompidos
 *.jpg binary
+*.png binary
+*.gif binary
 *.ico binary
-*.woff2 binary
+*.pdf binary
+*.dll binary
+*.exe binary
 *.woff binary
+*.woff2 binary

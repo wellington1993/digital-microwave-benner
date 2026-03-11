@@ -79,7 +79,6 @@ export default function App() {
         setTime(d.remainingSeconds ?? 0);
         setOutput(d.output ?? '');
         if (d.state === 'Heating') {
-           // Sincroniza refs locais se estiver vindo do server
            isPredefinedRef.current = d.isPredefined ?? false;
            setIsPredefined(d.isPredefined ?? false);
         }
@@ -92,12 +91,13 @@ export default function App() {
   }, [token, isOffline, goOffline]);
 
   useEffect(() => {
-    if (!isOffline) return;
+    if (!isOffline || !token) return;
 
     const probe = setInterval(async () => {
       try {
         await api.get('/microwave/status');
         setIsOffline(false);
+        if (token === 'offline') setToken(null);
       } catch { }
     }, 5000);
 
@@ -132,11 +132,13 @@ export default function App() {
       sessionStorage.setItem('microwave_token', res.data.token);
       setToken(res.data.token);
     } catch (err: any) {
-      if (err.response?.data?.mensagem) {
-        setMsg(err.response.data.mensagem);
-      } else {
+      if (!err.response) {
         setIsOffline(true);
         setToken('offline');
+      } else if (err.response?.status === 401) {
+        setMsg(err.response.data.mensagem);
+      } else {
+        setMsg('Erro ao conectar ao servidor.');
       }
     } finally { setLoading(false); }
   };
@@ -225,22 +227,22 @@ export default function App() {
         </section>
 
         <section className="w-full md:w-72 flex flex-col gap-6">
-          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 flex flex-col items-center font-mono shadow-inner">
+          <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-inner flex flex-col items-center font-mono">
             <div className="text-5xl md:text-6xl text-emerald-400 tracking-tighter" aria-label="Tempo restante">{fmt(time)}</div>
             <div className={`text-[10px] font-black uppercase tracking-widest mt-2 ${state === 'Heating' ? 'text-rose-500 animate-pulse' : 'text-zinc-600'}`}>{STATE_LABEL[state] || state}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button disabled={loading} onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })} className="bg-emerald-600 hover:bg-emerald-500 p-4 rounded-xl font-black text-sm uppercase transition-all active:scale-95">Start</button>
-            <button disabled={loading} onClick={handleQuickStart} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95">+30s</button>
-            <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95">Pausa / Cancelar</button>
+            <button disabled={loading} onClick={() => handleAction('start', { durationSeconds: 30, power: 10, heatingChar: '.', isPredefined: false })} className="bg-emerald-600 hover:bg-emerald-500 p-4 rounded-xl font-black text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-emerald-500">Start</button>
+            <button disabled={loading} onClick={handleQuickStart} className="bg-zinc-800 hover:bg-zinc-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-zinc-500">+30s</button>
+            <button disabled={loading} onClick={() => handleAction('pause-cancel')} className="col-span-2 bg-rose-800 hover:bg-rose-700 p-4 rounded-xl font-bold text-sm uppercase transition-all active:scale-95 focus:ring-2 focus:ring-rose-500">Pausa / Cancelar</button>
           </div>
 
           <div className="flex flex-col gap-2">
             <h2 className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest ml-1">Programas Fixos</h2>
             <div className="grid grid-cols-2 gap-2">
               {PREDEFINED_PROGRAMS.map(p => (
-                <button key={p.name} disabled={loading || state !== 'Idle'} onClick={() => handleAction('start-program', { programName: p.name })} className="bg-zinc-800 hover:bg-zinc-700 p-3 rounded-lg text-[11px] font-bold uppercase text-left truncate px-3">{p.name}</button>
+                <button key={p.name} disabled={loading} onClick={() => handleAction('start-program', { programName: p.name })} className="bg-zinc-800 hover:bg-zinc-700 p-3 rounded-lg text-[11px] font-bold uppercase text-left truncate px-3 transition-all active:scale-95 focus:ring-2 focus:ring-zinc-600">{p.name}</button>
               ))}
             </div>
           </div>

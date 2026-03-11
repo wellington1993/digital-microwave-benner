@@ -1,5 +1,8 @@
 # microwave-digital-benner
 
+![Build & Test](https://github.com/wellington1993/digital-microwave-benner/actions/workflows/ci.yml/badge.svg)
+![Frontend Deploy](https://github.com/wellington1993/digital-microwave-benner/actions/workflows/deploy.yml/badge.svg)
+
 Back-end em .NET 8 e Front-end em React. 
 
 O projeto conta com um sistema de resiliência: se o back-end estiver fora do ar, a interface chaveia automaticamente para uma simulação local para permitir o teste das funções básicas.
