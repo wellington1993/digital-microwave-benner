@@ -51,8 +51,8 @@ public sealed class MicrowaveOven
     public void Start(int duration, int power = 10, char heatingChar = '.', bool isPredefined = false)
     {
         if (_state is not PausedState)
-            Validate(duration, power);
-            
+            Validate(duration, power, isPredefined);
+
         _state.Start(this, duration, power, heatingChar, isPredefined);
     }
 
@@ -108,11 +108,11 @@ public sealed class MicrowaveOven
         TransitionTo(new IdleState());
     }
 
-    private static void Validate(int duration, int power)
+    private static void Validate(int duration, int power, bool isPredefined = false)
     {
-        if (duration < 1 || duration > 120)
+        if (!isPredefined && (duration < 1 || duration > 120))
             throw new BusinessRuleException("O tempo deve ser entre 1 e 120 segundos.");
-        
+
         if (power < 1 || power > 10)
             throw new BusinessRuleException("A potencia deve ser entre 1 e 10.");
     }

@@ -27,22 +27,26 @@ public sealed class MicrowaveController : ControllerBase
     [HttpGet("stream")]
     public async Task GetStream()
     {
-        Response.ContentType        = "text/event-stream";
+        Response.ContentType                   = "text/event-stream";
         Response.Headers["Cache-Control"]      = "no-cache";
         Response.Headers["X-Accel-Buffering"]  = "no";
 
         var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var ct   = HttpContext.RequestAborted;
 
-        while (!ct.IsCancellationRequested)
+        try
         {
-            var status = _microwaveService.GetStatus();
-            var json   = JsonSerializer.Serialize(status, opts);
+            while (!ct.IsCancellationRequested)
+            {
+                var status = _microwaveService.GetStatus();
+                var json   = JsonSerializer.Serialize(status, opts);
 
-            await Response.WriteAsync($"data: {json}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
-            await Task.Delay(1000, ct);
+                await Response.WriteAsync($"data: {json}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+                await Task.Delay(1000, ct);
+            }
         }
+        catch (OperationCanceledException) { }
     }
 
     [HttpPost("start")]
