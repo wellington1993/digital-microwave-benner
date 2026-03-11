@@ -23,7 +23,6 @@ export default function App() {
   const [time,         setTime]         = useState(0);
   const [output,       setOutput]       = useState('');
   const [msg,          setMsg]          = useState('');
-  const [isPredefined, setIsPredefined] = useState(false);
 
   const timerRef        = useRef<any>(null);
   const charRef         = useRef('.');
@@ -50,18 +49,18 @@ export default function App() {
         setState('Heating');
       } else {
         charRef.current = '.'; powerRef.current = 10; isPredefinedRef.current = false;
-        setIsPredefined(false); setOutput(''); setTime(30); setState('Heating');
+        setOutput(''); setTime(30); setState('Heating');
       }
     } else if (action === 'start-program') {
       if (state !== 'Idle') { setMsg('O micro-ondas já está em uso.'); return; }
       const p = PREDEFINED_PROGRAMS.find(x => x.name === data.programName);
       if (p) {
         charRef.current = p.heatingChar; powerRef.current = p.power; isPredefinedRef.current = true;
-        setIsPredefined(true); setOutput(''); setTime(p.durationSeconds); setState('Heating');
+        setOutput(''); setTime(p.durationSeconds); setState('Heating');
       }
     } else if (action === 'pause-cancel') {
       if (state === 'Heating') { setState('Paused'); stopTimer(); }
-      else { stopTimer(); setState('Idle'); setTime(0); setOutput(''); setIsPredefined(false); isPredefinedRef.current = false; }
+      else { stopTimer(); setState('Idle'); setTime(0); setOutput(''); isPredefinedRef.current = false; }
     }
     setMsg('');
   }, [state, stopTimer]);
@@ -80,7 +79,6 @@ export default function App() {
         setOutput(d.output ?? '');
         if (d.state === 'Heating') {
            isPredefinedRef.current = d.isPredefined ?? false;
-           setIsPredefined(d.isPredefined ?? false);
         }
       } catch { }
     };
