@@ -123,11 +123,11 @@ export default function App() {
       sessionStorage.setItem('microwave_token', res.data.token);
       setToken(res.data.token);
     } catch (err: any) {
-      if (!err.response) {
+      if (!err.response || err.response.status !== 401) {
         setIsOffline(true);
         setToken('offline');
       } else {
-        setMsg(err.response?.data?.mensagem || 'Credenciais inválidas.');
+        setMsg(err.response.data?.mensagem || 'Credenciais inválidas.');
       }
     } finally { setLoading(false); }
   };
